@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/node16/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "es2020",
+    "strict": true,
+    "moduleResolution": "nodenext",
+    "declaration": true,
+  },
+  "include": ["./src/**/*.ts"]
+}
