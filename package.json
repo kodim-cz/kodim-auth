@@ -1,6 +1,6 @@
 {
   "name": "@kodim/auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An express middleware for authentication against kodim.cz",
   "main": "dist/index.js",
   "type": "module",
