@@ -1,10 +1,13 @@
 import express, { Router } from 'express';
 import axios, { AxiosError, isAxiosError } from 'axios';
 import cookieParser from 'cookie-parser';
+import jsonder from 'jsonder';
 
 interface KodimUser {
   email: string;
 }
+
+const api = jsonder();
 
 declare global {
   namespace Express {
@@ -38,10 +41,12 @@ export const kodimAuth = (): Router => {
     const token = getToken(req);
 
     if (token === null) {
-      res.status(403).send({
-        status: 'unauthorized',
-        errors: ['Missing or invalid authorization'],
+      api.sendFail(res, {
+        status: 401,
+        code: 'invalid_auth_header',
+        detail: 'Missing or invalid authorization header'
       });
+
       return;
     }
 
@@ -59,51 +64,63 @@ export const kodimAuth = (): Router => {
       if (isAxiosError(error)) {
         if (error.response) {
           if (error.response.status === 401) {
-            res.status(401).send({
-              status: 'unauthorized',
-              errors: ['Authorization rejected by kodim.cz']
+            api.sendFail(res, {
+              status: 401,
+              code: 'unauthorized',
+              detail: 'authentication rejected by kodim.cz',
+              meta: {
+                message: error.message,
+              }
             });
             return;
           }
 
-          res.status(500).send({
-            status: 'server error',
-            errors: [
-              `Error ${error.response.status} when authenticating agains kodim.cz`,
-              error.message,
-            ]
+          api.sendFail(res, {
+            status: 500,
+            code: 'unknown_error',
+            detail: `unknown error ${error.response.status} when authenticating against kodim.cz`,
+            meta: {
+              message: error.message,
+            }
           });
+
           return;
         }
         
         if (error.request) {
-          res.status(500).send({
-            status: 'server error',
-            errors: [
-              `kodim.cz did not respond`,
-              error.message,
-            ]
+          api.sendFail(res, {
+            status: 500,
+            code: 'no_response',
+            detail: `there was no response from kodim.cz`,
+            meta: {
+              message: error.message,
+            }
           });
+
           return;
         }
 
-        res.status(500).send({
-          status: 'server error',
-          errors: [
-            `we could not setup a request to kodim.cz`,
-            error.message,
-          ]
+        api.sendFail(res, {
+          status: 500,
+          code: 'failed_request',
+          detail: `could not send a request to kodim.cz`,
+          meta: {
+            message: error.message,
+          }
         });
+
         return;
       }
 
-      res.status(500).send({
-        status: 'server error',
-        errors: [
-          'something went wrong when authenticating against kodim.cz',
-          (error as Error).message,
-        ]
+      api.sendFail(res, {
+        status: 500,
+        code: 'unexpected_error',
+        detail: `unexpected error when authenticating against kodim.cz`,
+        meta: {
+          message: (error as Error).message,
+        }
       });
+
       return;
     }
   });
